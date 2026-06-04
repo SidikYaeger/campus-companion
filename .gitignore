@@ -1,0 +1,9 @@
+# Java / Spring Boot
+backend/target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Local config
+backend/src/main/resources/application.properties
