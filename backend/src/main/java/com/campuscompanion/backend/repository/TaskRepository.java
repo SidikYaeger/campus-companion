@@ -8,4 +8,10 @@ import java.util.List;
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByCourseId(Long courseId);
+
+    long countByStatus(String status);
+
+    long countByPriority(String priority);
+
+    List<Task> findTop5ByStatusNotOrderByDeadlineAsc(String status);
 }
