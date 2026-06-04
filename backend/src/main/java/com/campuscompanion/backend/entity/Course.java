@@ -1,6 +1,11 @@
 package com.campuscompanion.backend.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalTime;
 
 @Entity
@@ -11,12 +16,27 @@ public class Course {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Course name is required")
     private String name;
+
+    @NotBlank(message = "Lecturer name is required")
     private String lecturer;
+
+    @NotBlank(message = "Room is required")
     private String room;
+
+    @NotBlank(message = "Day is required")
     private String day;
+
+    @NotNull(message = "Start time is required")
     private LocalTime startTime;
+
+    @NotNull(message = "End time is required")
     private LocalTime endTime;
+
+    @NotNull(message = "SKS is required")
+    @Min(value = 1, message = "SKS must be at least 1")
+    @Max(value = 6, message = "SKS must be at most 6")
     private Integer sks;
 
     public Course() {

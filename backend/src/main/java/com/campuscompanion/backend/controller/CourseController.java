@@ -4,6 +4,7 @@ import com.campuscompanion.backend.entity.Course;
 import com.campuscompanion.backend.service.CourseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -28,12 +29,12 @@ public class CourseController {
     }
 
     @PostMapping
-    public Course createCourse(@RequestBody Course course) {
+    public Course createCourse(@Valid @RequestBody Course course) {
         return courseService.createCourse(course);
     }
 
     @PutMapping("/{id}")
-    public Course updateCourse(@PathVariable Long id, @RequestBody Course courseDetails) {
+    public Course updateCourse(@PathVariable Long id, @Valid @RequestBody Course courseDetails) {
         return courseService.updateCourse(id, courseDetails);
     }
 

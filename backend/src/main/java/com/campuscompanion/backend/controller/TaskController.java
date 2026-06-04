@@ -5,6 +5,7 @@ import com.campuscompanion.backend.entity.Task;
 import com.campuscompanion.backend.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -29,12 +30,12 @@ public class TaskController {
     }
 
     @PostMapping
-    public Task createTask(@RequestBody TaskRequest request) {
+    public Task createTask(@Valid @RequestBody TaskRequest request) {
         return taskService.createTask(request);
     }
 
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody TaskRequest request) {
+    public Task updateTask(@PathVariable Long id, @Valid @RequestBody TaskRequest request) {
         return taskService.updateTask(id, request);
     }
 

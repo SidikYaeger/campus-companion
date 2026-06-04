@@ -1,14 +1,27 @@
 package com.campuscompanion.backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDateTime;
 
 public class TaskRequest {
 
+    @NotBlank(message = "Task title is required")
     private String title;
+
     private String description;
+
+    @NotNull(message = "Deadline is required")
     private LocalDateTime deadline;
+
+    @NotBlank(message = "Status is required")
     private String status;
+
+    @NotBlank(message = "Priority is required")
     private String priority;
+
+    @NotNull(message = "Course ID is required")
     private Long courseId;
 
     public TaskRequest() {
