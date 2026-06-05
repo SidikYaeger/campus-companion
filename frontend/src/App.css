@@ -262,4 +262,14 @@
     font-weight: 700;
     cursor: pointer;
   }
+  
+  .undone-button {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: #facc15 !important;
+  color: #422006 !important;
+  cursor: pointer;
+  font-weight: 700;
+  }
 }

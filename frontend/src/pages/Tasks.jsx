@@ -14,6 +14,7 @@ function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -55,23 +56,52 @@ function Tasks() {
     }));
   };
 
+  const resetForm = () => {
+    setForm(initialForm);
+    setEditingId(null);
+    setError("");
+  };
+
+  const buildPayload = () => ({
+    ...form,
+    deadline: form.deadline ? `${form.deadline}:00` : null,
+    courseId: form.courseId ? Number(form.courseId) : null,
+  });
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
     try {
-      await api.post("/tasks", {
-        ...form,
-        deadline: form.deadline ? `${form.deadline}:00` : null,
-        courseId: form.courseId ? Number(form.courseId) : null,
-      });
+      const payload = buildPayload();
 
-      setForm(initialForm);
+      if (editingId) {
+        await api.put(`/tasks/${editingId}`, payload);
+      } else {
+        await api.post("/tasks", payload);
+      }
+
+      resetForm();
       fetchTasks();
     } catch (err) {
-      setError("Failed to create task. Please check your input.");
+      setError("Failed to save task. Please check your input.");
       console.error(err);
     }
+  };
+
+  const handleEdit = (task) => {
+    setEditingId(task.id);
+
+    setForm({
+      title: task.title || "",
+      description: task.description || "",
+      deadline: task.deadline ? task.deadline.slice(0, 16) : "",
+      status: task.status || "NOT_STARTED",
+      priority: task.priority || "MEDIUM",
+      courseId: task.course?.id || "",
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id) => {
@@ -82,27 +112,31 @@ function Tasks() {
     try {
       await api.delete(`/tasks/${id}`);
       fetchTasks();
+
+      if (editingId === id) {
+        resetForm();
+      }
     } catch (err) {
       setError("Failed to delete task");
       console.error(err);
     }
   };
 
-  const handleMarkDone = async (task) => {
-    try {
-      await api.put(`/tasks/${task.id}`, {
-        title: task.title,
-        description: task.description,
-        deadline: task.deadline,
-        status: "DONE",
-        priority: task.priority,
-        courseId: task.course?.id,
-      });
+  const handleUpdateStatus = async (task, newStatus) => {
+  try {
+    await api.put(`/tasks/${task.id}`, {
+      title: task.title,
+      description: task.description,
+      deadline: task.deadline,
+      status: newStatus,
+      priority: task.priority,
+      courseId: task.course?.id,
+    });
 
-      fetchTasks();
-    } catch (err) {
-      setError("Failed to update task status");
-      console.error(err);
+    fetchTasks();
+  } catch (err) {
+    setError("Failed to update task status");
+    console.error(err);
     }
   };
 
@@ -142,8 +176,12 @@ function Tasks() {
 
       <section className="section">
         <div className="section-header">
-          <h2>Add Task</h2>
-          <p>Create a new task and connect it to a course.</p>
+          <h2>{editingId ? "Edit Task" : "Add Task"}</h2>
+          <p>
+            {editingId
+              ? "Update the selected task information."
+              : "Create a new task and connect it to a course."}
+          </p>
         </div>
 
         {error && <p className="error-box">{error}</p>}
@@ -196,7 +234,15 @@ function Tasks() {
               <option value="HIGH">High</option>
             </select>
 
-            <button type="submit">Add Task</button>
+            <button type="submit">
+              {editingId ? "Update Task" : "Add Task"}
+            </button>
+
+            {editingId && (
+              <button type="button" className="cancel-button" onClick={resetForm}>
+                Cancel
+              </button>
+            )}
           </form>
         )}
       </section>
@@ -264,16 +310,37 @@ function Tasks() {
                   <small>{task.status}</small>
                   <small>{formatDeadline(task.deadline)}</small>
 
-                  {task.status !== "DONE" && (
+                  <div className="action-buttons">
                     <button
-                      className="done-button"
-                      onClick={() => handleMarkDone(task)}
+                      className="edit-button"
+                      onClick={() => handleEdit(task)}
                     >
-                      Mark Done
+                      Edit
                     </button>
-                  )}
 
-                  <button onClick={() => handleDelete(task.id)}>Delete</button>
+                    {task.status !== "DONE" ? (
+                      <button
+                        className="done-button"
+                        onClick={() => handleUpdateStatus(task, "DONE")}
+                      >
+                        Done
+                      </button>
+                    ) : (
+                      <button
+                        className="undone-button"
+                        onClick={() => handleUpdateStatus(task, "NOT_STARTED")}
+                      >
+                        Undone
+                      </button>
+                    )}
+
+                    <button
+                      className="delete-button"
+                      onClick={() => handleDelete(task.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
