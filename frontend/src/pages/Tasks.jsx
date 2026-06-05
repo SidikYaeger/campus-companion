@@ -16,6 +16,11 @@ function Tasks() {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [courseFilter, setCourseFilter] = useState("ALL");
+
   useEffect(() => {
     fetchTasks();
     fetchCourses();
@@ -83,10 +88,45 @@ function Tasks() {
     }
   };
 
+  const handleMarkDone = async (task) => {
+    try {
+      await api.put(`/tasks/${task.id}`, {
+        title: task.title,
+        description: task.description,
+        deadline: task.deadline,
+        status: "DONE",
+        priority: task.priority,
+        courseId: task.course?.id,
+      });
+
+      fetchTasks();
+    } catch (err) {
+      setError("Failed to update task status");
+      console.error(err);
+    }
+  };
+
   const formatDeadline = (deadline) => {
     if (!deadline) return "No deadline";
     return new Date(deadline).toLocaleString();
   };
+
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(search.toLowerCase()) ||
+      (task.description || "").toLowerCase().includes(search.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "ALL" || task.status === statusFilter;
+
+    const matchesPriority =
+      priorityFilter === "ALL" || task.priority === priorityFilter;
+
+    const matchesCourse =
+      courseFilter === "ALL" || task.course?.id === Number(courseFilter);
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesCourse;
+  });
 
   return (
     <>
@@ -164,14 +204,54 @@ function Tasks() {
       <section className="section">
         <div className="section-header">
           <h2>Task List</h2>
-          <p>{tasks.length} task(s) registered.</p>
+          <p>{filteredTasks.length} task(s) shown.</p>
         </div>
 
-        {tasks.length === 0 ? (
-          <div className="empty-state">No tasks yet.</div>
+        <div className="filter-bar">
+          <input
+            placeholder="Search task..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <select
+            value={courseFilter}
+            onChange={(event) => setCourseFilter(event.target.value)}
+          >
+            <option value="ALL">All Courses</option>
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            <option value="ALL">All Status</option>
+            <option value="NOT_STARTED">Not Started</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="DONE">Done</option>
+          </select>
+
+          <select
+            value={priorityFilter}
+            onChange={(event) => setPriorityFilter(event.target.value)}
+          >
+            <option value="ALL">All Priority</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+          </select>
+        </div>
+
+        {filteredTasks.length === 0 ? (
+          <div className="empty-state">No matching tasks.</div>
         ) : (
           <div className="task-list">
-            {tasks.map((task) => (
+            {filteredTasks.map((task) => (
               <div className="task-card" key={task.id}>
                 <div>
                   <h3>{task.title}</h3>
@@ -183,6 +263,16 @@ function Tasks() {
                   <strong>{task.priority}</strong>
                   <small>{task.status}</small>
                   <small>{formatDeadline(task.deadline)}</small>
+
+                  {task.status !== "DONE" && (
+                    <button
+                      className="done-button"
+                      onClick={() => handleMarkDone(task)}
+                    >
+                      Mark Done
+                    </button>
+                  )}
+
                   <button onClick={() => handleDelete(task.id)}>Delete</button>
                 </div>
               </div>

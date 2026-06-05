@@ -201,4 +201,32 @@
       grid-template-columns: 1fr;
     }
   }
+  .filter-bar {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #e5e7eb;
+  }
+
+  .done-button {
+    background: #22c55e !important;
+    color: #052e16 !important;
+    font-weight: 700;
+  }
+
+  @media (max-width: 900px) {
+    .filter-bar {
+      grid-template-columns: 1fr;
+    }
+  }
 }
