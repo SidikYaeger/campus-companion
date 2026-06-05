@@ -145,7 +145,50 @@ function Tasks() {
     return new Date(deadline).toLocaleString();
   };
 
-  const filteredTasks = tasks.filter((task) => {
+  const getDeadlineStatus = (task) => {
+  if (task.status === "DONE") {
+    return "DONE";
+  }
+
+  if (!task.deadline) {
+    return "NO_DEADLINE";
+  }
+
+  const now = new Date();
+  const deadline = new Date(task.deadline);
+  const diffMs = deadline - now;
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffMs < 0) {
+    return "OVERDUE";
+  }
+
+  if (diffHours <= 24) {
+    return "DUE_SOON";
+  }
+
+  return "UPCOMING";
+};
+
+const getDeadlineLabel = (task) => {
+  const status = getDeadlineStatus(task);
+
+  switch (status) {
+    case "DONE":
+      return "Done";
+    case "OVERDUE":
+      return "Overdue";
+    case "DUE_SOON":
+      return "Due Soon";
+    case "UPCOMING":
+      return "Upcoming";
+    default:
+      return "No Deadline";
+  }
+};
+
+  const filteredTasks = tasks
+  .filter((task) => {
     const matchesSearch =
       task.title.toLowerCase().includes(search.toLowerCase()) ||
       (task.description || "").toLowerCase().includes(search.toLowerCase());
@@ -160,6 +203,15 @@ function Tasks() {
       courseFilter === "ALL" || task.course?.id === Number(courseFilter);
 
     return matchesSearch && matchesStatus && matchesPriority && matchesCourse;
+  })
+  .sort((a, b) => {
+    if (a.status === "DONE" && b.status !== "DONE") return 1;
+    if (a.status !== "DONE" && b.status === "DONE") return -1;
+
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+
+    return new Date(a.deadline) - new Date(b.deadline);
   });
 
   return (
@@ -298,7 +350,10 @@ function Tasks() {
         ) : (
           <div className="task-list">
             {filteredTasks.map((task) => (
-              <div className="task-card" key={task.id}>
+              <div
+                className={`task-card ${getDeadlineStatus(task).toLowerCase()}`}
+                key={task.id}
+              >
                 <div>
                   <h3>{task.title}</h3>
                   <p>{task.description || "No description"}</p>
@@ -308,6 +363,11 @@ function Tasks() {
                 <div className="task-meta">
                   <strong>{task.priority}</strong>
                   <small>{task.status}</small>
+
+                  <span className={`deadline-badge ${getDeadlineStatus(task).toLowerCase()}`}>
+                    {getDeadlineLabel(task)}
+                  </span>
+
                   <small>{formatDeadline(task.deadline)}</small>
 
                   <div className="action-buttons">
