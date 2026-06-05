@@ -14,6 +14,7 @@ const initialForm = {
 function Courses() {
   const [courses, setCourses] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -39,24 +40,52 @@ function Courses() {
     }));
   };
 
+  const resetForm = () => {
+    setForm(initialForm);
+    setEditingId(null);
+    setError("");
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
-    try {
-      await api.post("/courses", {
-        ...form,
-        startTime: `${form.startTime}:00`,
-        endTime: `${form.endTime}:00`,
-        sks: Number(form.sks),
-      });
+    const payload = {
+      ...form,
+      startTime: form.startTime ? `${form.startTime}:00` : null,
+      endTime: form.endTime ? `${form.endTime}:00` : null,
+      sks: Number(form.sks),
+    };
 
-      setForm(initialForm);
+    try {
+      if (editingId) {
+        await api.put(`/courses/${editingId}`, payload);
+      } else {
+        await api.post("/courses", payload);
+      }
+
+      resetForm();
       fetchCourses();
     } catch (err) {
-      setError("Failed to create course. Please check your input.");
+      setError("Failed to save course. Please check your input.");
       console.error(err);
     }
+  };
+
+  const handleEdit = (course) => {
+    setEditingId(course.id);
+
+    setForm({
+      name: course.name || "",
+      lecturer: course.lecturer || "",
+      room: course.room || "",
+      day: course.day || "",
+      startTime: course.startTime ? course.startTime.slice(0, 5) : "",
+      endTime: course.endTime ? course.endTime.slice(0, 5) : "",
+      sks: course.sks || 3,
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id) => {
@@ -67,8 +96,12 @@ function Courses() {
     try {
       await api.delete(`/courses/${id}`);
       fetchCourses();
+
+      if (editingId === id) {
+        resetForm();
+      }
     } catch (err) {
-      setError("Failed to delete course");
+      setError("Failed to delete course. This course may still have related tasks.");
       console.error(err);
     }
   };
@@ -87,8 +120,12 @@ function Courses() {
 
       <section className="section">
         <div className="section-header">
-          <h2>Add Course</h2>
-          <p>Create a new course for this semester.</p>
+          <h2>{editingId ? "Edit Course" : "Add Course"}</h2>
+          <p>
+            {editingId
+              ? "Update the selected course information."
+              : "Create a new course for this semester."}
+          </p>
         </div>
 
         {error && <p className="error-box">{error}</p>}
@@ -148,7 +185,15 @@ function Courses() {
             onChange={handleChange}
           />
 
-          <button type="submit">Add Course</button>
+          <button type="submit">
+            {editingId ? "Update Course" : "Add Course"}
+          </button>
+
+          {editingId && (
+            <button type="button" className="cancel-button" onClick={resetForm}>
+              Cancel
+            </button>
+          )}
         </form>
       </section>
 
@@ -175,9 +220,22 @@ function Courses() {
                 <div className="course-meta">
                   <strong>{course.sks} SKS</strong>
                   <small>{course.room}</small>
-                  <button onClick={() => handleDelete(course.id)}>
-                    Delete
-                  </button>
+
+                  <div className="action-buttons">
+                    <button
+                      className="edit-button"
+                      onClick={() => handleEdit(course)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      className="delete-button"
+                      onClick={() => handleDelete(course.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
