@@ -6,6 +6,7 @@ import com.campuscompanion.backend.repository.CourseRepository;
 import com.campuscompanion.backend.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,10 +21,35 @@ public class DashboardService {
     }
 
     public DashboardSummary getDashboardSummary() {
+        List<Task> allTasks = taskRepository.findAll();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime next24Hours = now.plusHours(24);
+
         long totalCourses = courseRepository.count();
-        long totalTasks = taskRepository.count();
-        long completedTasks = taskRepository.countByStatus("DONE");
-        long highPriorityTasks = taskRepository.countByPriority("HIGH");
+        long totalTasks = allTasks.size();
+
+        long completedTasks = allTasks.stream()
+                .filter(task -> "DONE".equals(task.getStatus()))
+                .count();
+
+        long highPriorityTasks = allTasks.stream()
+                .filter(task -> "HIGH".equals(task.getPriority()))
+                .count();
+
+        long overdueTasks = allTasks.stream()
+                .filter(task -> !"DONE".equals(task.getStatus()))
+                .filter(task -> task.getDeadline() != null)
+                .filter(task -> task.getDeadline().isBefore(now))
+                .count();
+
+        long dueSoonTasks = allTasks.stream()
+                .filter(task -> !"DONE".equals(task.getStatus()))
+                .filter(task -> task.getDeadline() != null)
+                .filter(task -> !task.getDeadline().isBefore(now))
+                .filter(task -> task.getDeadline().isBefore(next24Hours))
+                .count();
+
         long pendingTasks = totalTasks - completedTasks;
 
         return new DashboardSummary(
@@ -31,7 +57,9 @@ public class DashboardService {
                 totalTasks,
                 pendingTasks,
                 completedTasks,
-                highPriorityTasks
+                highPriorityTasks,
+                overdueTasks,
+                dueSoonTasks
         );
     }
 

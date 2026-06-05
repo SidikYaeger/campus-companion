@@ -7,17 +7,22 @@ public class DashboardSummary {
     private long pendingTasks;
     private long completedTasks;
     private long highPriorityTasks;
+    private long overdueTasks;
+    private long dueSoonTasks;
 
     public DashboardSummary() {
     }
 
     public DashboardSummary(long totalCourses, long totalTasks, long pendingTasks,
-                            long completedTasks, long highPriorityTasks) {
+                            long completedTasks, long highPriorityTasks,
+                            long overdueTasks, long dueSoonTasks) {
         this.totalCourses = totalCourses;
         this.totalTasks = totalTasks;
         this.pendingTasks = pendingTasks;
         this.completedTasks = completedTasks;
         this.highPriorityTasks = highPriorityTasks;
+        this.overdueTasks = overdueTasks;
+        this.dueSoonTasks = dueSoonTasks;
     }
 
     public long getTotalCourses() {
@@ -58,5 +63,21 @@ public class DashboardSummary {
 
     public void setHighPriorityTasks(long highPriorityTasks) {
         this.highPriorityTasks = highPriorityTasks;
+    }
+
+    public long getOverdueTasks() {
+        return overdueTasks;
+    }
+
+    public void setOverdueTasks(long overdueTasks) {
+        this.overdueTasks = overdueTasks;
+    }
+
+    public long getDueSoonTasks() {
+        return dueSoonTasks;
+    }
+
+    public void setDueSoonTasks(long dueSoonTasks) {
+        this.dueSoonTasks = dueSoonTasks;
     }
 }

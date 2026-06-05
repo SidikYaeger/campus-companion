@@ -323,4 +323,19 @@
   .task-card.done {
     opacity: 0.72;
   }
+
+  .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+  }
+
+  .danger-card {
+  border-color: rgba(239, 68, 68, 0.7);
+  }
+
+  .warning-card {
+    border-color: rgba(250, 204, 21, 0.7);
+  }
 }

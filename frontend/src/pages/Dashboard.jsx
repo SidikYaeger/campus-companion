@@ -71,6 +71,16 @@ function Dashboard() {
           <p>High Priority</p>
           <h2>{summary.highPriorityTasks}</h2>
         </div>
+
+        <div className="summary-card danger-card">
+          <p>Overdue</p>
+          <h2>{summary.overdueTasks}</h2>
+        </div>
+
+        <div className="summary-card warning-card">
+          <p>Due Soon</p>
+          <h2>{summary.dueSoonTasks}</h2>
+        </div>
       </section>
 
       <section className="section">
