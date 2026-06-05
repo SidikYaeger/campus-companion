@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import Tasks from "./pages/Tasks";
 import "./App.css";
+import Calendar from "./pages/Calendar";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="courses" element={<Courses />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="calendar" element={<Calendar />} />
         </Route>
       </Routes>
     </BrowserRouter>
