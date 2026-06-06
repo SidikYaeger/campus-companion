@@ -1,471 +1,222 @@
-# Campus Companion (it's a simple version so don't expect too much)
+# Campus Companion
 
-Campus Companion is a fullstack student productivity dashboard for managing courses, assignments, deadlines, calendar activities, and semester workload.
+Campus Companion is a full-stack student productivity application for managing
+courses, assignments, deadlines, and personal activities in one place.
 
-This project is designed as a portfolio-ready web application built with a modern fullstack architecture: React on the frontend, Spring Boot on the backend, and PostgreSQL as the database.
+The application helps students organize their semester through a dashboard that
+summarizes their academic workload, upcoming tasks, course schedules, and
+calendar events.
 
 ## Features
 
 ### Dashboard
 
-* View total registered courses
-* View total tasks
-* Track pending and completed tasks
-* Track high-priority tasks
-* Detect overdue tasks
-* Detect tasks due soon
-* View upcoming academic deadlines
-* View upcoming calendar events for the next 7 days
+- View course and task totals
+- Track pending, completed, overdue, due-soon, and high-priority tasks
+- View upcoming academic deadlines
+- View calendar activities for the next seven days
 
 ### Course Management
 
-* Add new courses
-* View all courses
-* Edit course information
-* Delete courses
-* Store course data in PostgreSQL
-
-Course data includes:
-
-* Course name
-* Lecturer
-* Room
-* Day
-* Start time
-* End time
-* SKS / credits
+- Add, view, edit, and delete courses
+- Store lecturer, room, day, schedule, and SKS information
+- Prevent courses with related tasks from being deleted accidentally
 
 ### Task Management
 
-* Add assignments or study tasks
-* Connect tasks to courses
-* View all tasks
-* Edit tasks
-* Delete tasks
-* Mark tasks as done
-* Undo completed tasks
-* Search tasks
-* Filter tasks by course
-* Filter tasks by status
-* Filter tasks by priority
-* Automatically sort tasks by urgency
+- Add, view, edit, and delete tasks
+- Connect tasks to courses
+- Set task status, priority, and deadline
+- Mark tasks as done or return them to not started
+- Search and filter tasks by course, status, and priority
+- Automatically identify overdue, due-soon, upcoming, and completed tasks
 
-Task deadline statuses:
+### Activity Calendar
 
-* Overdue
-* Due Soon
-* Upcoming
-* Done
-* No Deadline
+- View activities in a monthly calendar
+- Add and delete personal or academic activities
+- Set activity type and reminder time
+- Display upcoming activities on the dashboard
 
-### Calendar
+### Validation and Error Handling
 
-* Monthly calendar view
-* Add personal or academic activities
-* Store calendar events in PostgreSQL
-* View events on their respective dates
-* Delete calendar events
-* Set simple reminder time data
-* Show upcoming calendar events on the dashboard
-
-Calendar event types include:
-
-* Personal
-* Study
-* Meeting
-* Exam
-* Other
-
-### Error Handling and Validation
-
-* Backend request validation
-* Custom global error response
-* Clean validation messages
-* Proper error handling for missing data and invalid requests
-
-## Tech Stack
-
-### Frontend
-
-* React
-* Vite
-* JavaScript
-* React Router DOM
-* Axios
-* CSS
-
-### Backend
-
-* Java
-* Spring Boot
-* Spring Web
-* Spring Data JPA
-* Jakarta Validation
-* Maven
-
-### Database
-
-* PostgreSQL
-
-### Tools
-
-* IntelliJ IDEA Community
-* VS Code
-* Postman
-* pgAdmin
-* Git
-* GitHub
-* Miro
-
-## Project Structure
-
-```txt
-campus-companion/
-├── backend/
-│   ├── src/main/java/com/campuscompanion/backend/
-│   │   ├── config/
-│   │   │   └── CorsConfig.java
-│   │   ├── controller/
-│   │   │   ├── HealthController.java
-│   │   │   ├── CourseController.java
-│   │   │   ├── TaskController.java
-│   │   │   ├── DashboardController.java
-│   │   │   └── CalendarEventController.java
-│   │   ├── dto/
-│   │   │   ├── TaskRequest.java
-│   │   │   ├── DashboardSummary.java
-│   │   │   └── CalendarEventRequest.java
-│   │   ├── entity/
-│   │   │   ├── Course.java
-│   │   │   ├── Task.java
-│   │   │   └── CalendarEvent.java
-│   │   ├── exception/
-│   │   │   ├── ErrorResponse.java
-│   │   │   └── GlobalExceptionHandler.java
-│   │   ├── repository/
-│   │   │   ├── CourseRepository.java
-│   │   │   ├── TaskRepository.java
-│   │   │   └── CalendarEventRepository.java
-│   │   ├── service/
-│   │   │   ├── CourseService.java
-│   │   │   ├── TaskService.java
-│   │   │   ├── DashboardService.java
-│   │   │   └── CalendarEventService.java
-│   │   └── BackendApplication.java
-│   └── src/main/resources/
-│       ├── application.properties
-│       └── application-example.properties
-│
-└── frontend/
-    ├── src/
-    │   ├── api/
-    │   │   └── axiosConfig.js
-    │   ├── components/
-    │   │   └── Layout.jsx
-    │   ├── pages/
-    │   │   ├── Dashboard.jsx
-    │   │   ├── Courses.jsx
-    │   │   ├── Tasks.jsx
-    │   │   └── Calendar.jsx
-    │   ├── App.jsx
-    │   └── App.css
-    └── package.json
-```
-
-## Backend Architecture
-
-The backend uses a layered architecture:
-
-```txt
-Controller → Service → Repository → Database
-```
-
-### Controller
-
-Handles incoming HTTP requests and returns API responses.
-
-### Service
-
-Contains business logic and validation-related flow.
-
-### Repository
-
-Handles database operations using Spring Data JPA.
-
-### Database
-
-Stores persistent data using PostgreSQL.
-
-## API Endpoints
-
-### Health Check
-
-| Method | Endpoint      | Description                 |
-| ------ | ------------- | --------------------------- |
-| GET    | `/api/health` | Check if backend is running |
-
-### Courses
-
-| Method | Endpoint            | Description         |
-| ------ | ------------------- | ------------------- |
-| GET    | `/api/courses`      | Get all courses     |
-| GET    | `/api/courses/{id}` | Get course by ID    |
-| POST   | `/api/courses`      | Create a new course |
-| PUT    | `/api/courses/{id}` | Update a course     |
-| DELETE | `/api/courses/{id}` | Delete a course     |
-
-### Tasks
-
-| Method | Endpoint                   | Description            |
-| ------ | -------------------------- | ---------------------- |
-| GET    | `/api/tasks`               | Get all tasks          |
-| GET    | `/api/tasks/{id}`          | Get task by ID         |
-| GET    | `/api/tasks?courseId={id}` | Get tasks by course ID |
-| POST   | `/api/tasks`               | Create a new task      |
-| PUT    | `/api/tasks/{id}`          | Update a task          |
-| DELETE | `/api/tasks/{id}`          | Delete a task          |
-
-### Dashboard
-
-| Method | Endpoint                        | Description           |
-| ------ | ------------------------------- | --------------------- |
-| GET    | `/api/dashboard/summary`        | Get dashboard summary |
-| GET    | `/api/dashboard/upcoming-tasks` | Get upcoming tasks    |
-
-### Calendar Events
-
-| Method | Endpoint                                               | Description                 |
-| ------ | ------------------------------------------------------ | --------------------------- |
-| GET    | `/api/calendar-events`                                 | Get all calendar events     |
-| GET    | `/api/calendar-events/{id}`                            | Get calendar event by ID    |
-| GET    | `/api/calendar-events?start={datetime}&end={datetime}` | Get events by date range    |
-| POST   | `/api/calendar-events`                                 | Create a new calendar event |
-| PUT    | `/api/calendar-events/{id}`                            | Update a calendar event     |
-| DELETE | `/api/calendar-events/{id}`                            | Delete a calendar event     |
+- Validate course, task, and calendar event input
+- Return structured API error responses
+- Display understandable error messages in the frontend
+- Prevent duplicate actions while requests are processing
 
 ## Screenshots
 
 ### Dashboard
 
-The dashboard summarizes courses, task progress, urgent deadlines, and upcoming calendar activities.
-
 ![Campus Companion Dashboard](https://i.imgur.com/75gxlnF.png)
 
 ### Course Manager
-
-The course manager provides course scheduling details and complete create, update, and delete workflows.
 
 ![Campus Companion Course Manager](https://i.imgur.com/4d84PHt.png)
 
 ### Task Manager
 
-The task manager supports course-linked assignments, status updates, deadline tracking, search, and filtering.
-
 ![Campus Companion Task Manager](https://i.imgur.com/md7MyjV.png)
 
 ### Activity Calendar
 
-The monthly calendar organizes personal and academic events with reminder settings.
-
 ![Campus Companion Activity Calendar](https://i.imgur.com/JGdr9zV.png)
 
-## Getting Started
+## Tech Stack
 
-### Prerequisites
+### Frontend
 
-Make sure these are installed:
+- React
+- Vite
+- JavaScript
+- React Router DOM
+- Axios
+- CSS
 
-* Java JDK 21
-* Node.js and npm
-* PostgreSQL
-* Git
+### Backend
 
-## Backend Setup
+- Java 21
+- Spring Boot
+- Spring Web
+- Spring Data JPA
+- Jakarta Validation
+- Maven
 
-### 1. Clone the repository
+### Database
+
+- PostgreSQL
+
+## Requirements
+
+Install the following software before running the project:
+
+- Java JDK 21
+- Node.js and npm
+- PostgreSQL
+- Git
+- IntelliJ IDEA or another Java IDE
+- VS Code or another frontend editor
+
+## Project Structure
+
+```text
+campus-companion/
+|-- backend/
+|   |-- src/main/java/com/campuscompanion/backend/
+|   |   |-- config/
+|   |   |-- controller/
+|   |   |-- dto/
+|   |   |-- entity/
+|   |   |-- exception/
+|   |   |-- repository/
+|   |   `-- service/
+|   `-- src/main/resources/
+`-- frontend/
+    `-- src/
+        |-- api/
+        |-- components/
+        `-- pages/
+```
+
+The backend uses a layered architecture:
+
+```text
+Controller -> Service -> Repository -> PostgreSQL
+```
+
+## Setup
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/SidikYaeger/campus-companion.git
 cd campus-companion
 ```
 
-### 2. Create PostgreSQL database
+### 2. Create the Database
 
-Create a database named:
+Create a PostgreSQL database:
 
-```txt
+```text
 campus_companion_db
 ```
 
-### 3. Configure application properties
+### 3. Configure the Backend
 
-Create a local file:
+Create this local configuration file:
 
-```txt
+```text
 backend/src/main/resources/application.properties
 ```
 
-Use `application-example.properties` as a template:
+Use `application-example.properties` as a template and provide your PostgreSQL
+username and password.
 
-```properties
-spring.application.name=backend
+Do not commit `application.properties` because it contains local database
+credentials.
 
-spring.datasource.url=jdbc:postgresql://localhost:5432/campus_companion_db
-spring.datasource.username=postgres
-spring.datasource.password=YOUR_POSTGRES_PASSWORD
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-```
-
-Important:
-
-Do not upload `application.properties` to GitHub because it may contain local database credentials.
-
-### 4. Run the backend
+### 4. Run the Backend
 
 Open the `backend` folder in IntelliJ IDEA and run:
 
-```txt
+```text
 BackendApplication.java
 ```
 
-Backend will run on:
+The backend runs at:
 
-```txt
+```text
 http://localhost:8080
 ```
 
-Health check:
-
-```txt
-http://localhost:8080/api/health
-```
-
-## Frontend Setup
-
-### 1. Open frontend folder
+### 5. Run the Frontend
 
 ```bash
 cd frontend
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
-```
-
-### 3. Run frontend
-
-```bash
 npm run dev
 ```
 
-Frontend will run on:
+The frontend runs at:
 
-```txt
+```text
 http://localhost:5173
 ```
 
-## Local Development Flow
+The frontend uses `VITE_API_BASE_URL` when configured and otherwise connects to:
 
-Run both backend and frontend at the same time:
-
-```txt
-Backend  → http://localhost:8080
-Frontend → http://localhost:5173
-```
-
-The frontend communicates with the backend through Axios using:
-
-```txt
+```text
 http://localhost:8080/api
 ```
 
-## Git and Security Notes
+## Main API Endpoints
 
-Before committing or pushing, always check:
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/health` | Check backend availability |
+| GET, POST | `/api/courses` | List or create courses |
+| GET, PUT, DELETE | `/api/courses/{id}` | Read, update, or delete a course |
+| GET, POST | `/api/tasks` | List or create tasks |
+| GET, PUT, DELETE | `/api/tasks/{id}` | Read, update, or delete a task |
+| GET | `/api/dashboard/summary` | Get dashboard totals |
+| GET | `/api/dashboard/upcoming-tasks` | Get upcoming tasks |
+| GET, POST | `/api/calendar-events` | List or create calendar events |
+| GET, PUT, DELETE | `/api/calendar-events/{id}` | Read, update, or delete an event |
 
-```bash
-git status
-```
+## Security Notes
 
-Do not commit sensitive files such as:
+Do not commit sensitive local files or credentials, including:
 
-* `application.properties`
-* `.env`
-* database passwords
-* API keys
-* tokens
-* private keys
-* credential JSON files
-* local configuration files
+- `application.properties`
+- `.env`
+- Database passwords
+- API keys and tokens
+- Private keys
 
-Use example config files instead:
-
-```txt
-application-example.properties
-```
-
-## Current Status
-
-This project is currently in active development.
-
-Completed:
-
-* Backend Spring Boot setup
-* PostgreSQL integration
-* Course CRUD API
-* Task CRUD API
-* Dashboard API
-* Calendar Event API
-* Service layer
-* Validation
-* Global error handler
-* CORS configuration
-* React + Vite frontend
-* Sidebar navigation
-* Dashboard page
-* Courses page
-* Tasks page
-* Calendar page
-* Responsive styling fix
-
-## Roadmap
-
-### High Priority
-
-* Edit calendar events from frontend
-* Integrate task deadlines into calendar view
-* Integrate course schedules into calendar view
-* Keep README screenshots updated
-* Improve UI polish
-
-### Medium Priority
-
-* Reminder Center on dashboard
-* Browser notification for reminders
-* Backend enum for task status and priority
-* Better DTO response structure
-* Search and filter calendar events
-
-### Later
-
-* Login and register
-* User-specific data
-* Deployment
-* GPA/IPK calculator
-* Weekly calendar view
-* Export schedule
-* Dark/light mode toggle
+Use example configuration files such as `application-example.properties` and
+`.env.example` instead.
 
 ## Author
 
 Created by Zhafir Tectona.
-
-## License
-
-This project is currently for learning and portfolio purposes.
