@@ -130,11 +130,15 @@ function Courses() {
         resetForm();
       }
     } catch (err) {
+      const databaseMessage = err.response?.data?.message || "";
+      const hasRelatedTasks =
+        databaseMessage.includes("foreign key constraint") ||
+        databaseMessage.includes("still referenced from table \"tasks\"");
+
       setError(
-        getApiErrorMessage(
-          err,
-          "Failed to delete course. This course may still have related tasks."
-        )
+        hasRelatedTasks
+          ? "This course cannot be deleted because it still has related tasks. Delete or move those tasks first."
+          : getApiErrorMessage(err, "Failed to delete course.")
       );
       console.error(err);
     } finally {

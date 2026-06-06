@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axiosConfig";
+import { getApiErrorMessage } from "../api/errorMessage";
 
 const initialForm = {
   title: "",
@@ -16,6 +17,8 @@ function Tasks() {
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busyAction, setBusyAction] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -23,29 +26,43 @@ function Tasks() {
   const [courseFilter, setCourseFilter] = useState("ALL");
 
   useEffect(() => {
-    fetchTasks();
-    fetchCourses();
+    let ignore = false;
+
+    async function loadData() {
+      try {
+        const [tasksResponse, coursesResponse] = await Promise.all([
+          api.get("/tasks"),
+          api.get("/courses"),
+        ]);
+
+        if (!ignore) {
+          setTasks(tasksResponse.data);
+          setCourses(coursesResponse.data);
+        }
+      } catch (err) {
+        if (!ignore) setError(getApiErrorMessage(err, "Failed to load tasks."));
+        console.error(err);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    loadData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  const fetchTasks = async () => {
+  async function fetchTasks() {
     try {
       const response = await api.get("/tasks");
       setTasks(response.data);
     } catch (err) {
-      setError("Failed to load tasks");
+      setError(getApiErrorMessage(err, "Failed to load tasks."));
       console.error(err);
     }
-  };
-
-  const fetchCourses = async () => {
-    try {
-      const response = await api.get("/courses");
-      setCourses(response.data);
-    } catch (err) {
-      setError("Failed to load courses");
-      console.error(err);
-    }
-  };
+  }
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -71,6 +88,7 @@ function Tasks() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setBusyAction("save");
 
     try {
       const payload = buildPayload();
@@ -82,10 +100,14 @@ function Tasks() {
       }
 
       resetForm();
-      fetchTasks();
+      await fetchTasks();
     } catch (err) {
-      setError("Failed to save task. Please check your input.");
+      setError(
+        getApiErrorMessage(err, "Failed to save task. Please check your input.")
+      );
       console.error(err);
+    } finally {
+      setBusyAction("");
     }
   };
 
@@ -110,33 +132,39 @@ function Tasks() {
     if (!confirmed) return;
 
     try {
+      setBusyAction(`delete-${id}`);
       await api.delete(`/tasks/${id}`);
-      fetchTasks();
+      await fetchTasks();
 
       if (editingId === id) {
         resetForm();
       }
     } catch (err) {
-      setError("Failed to delete task");
+      setError(getApiErrorMessage(err, "Failed to delete task."));
       console.error(err);
+    } finally {
+      setBusyAction("");
     }
   };
 
   const handleUpdateStatus = async (task, newStatus) => {
-  try {
-    await api.put(`/tasks/${task.id}`, {
-      title: task.title,
-      description: task.description,
-      deadline: task.deadline,
-      status: newStatus,
-      priority: task.priority,
-      courseId: task.course?.id,
-    });
+    try {
+      setBusyAction(`status-${task.id}`);
+      await api.put(`/tasks/${task.id}`, {
+        title: task.title,
+        description: task.description,
+        deadline: task.deadline,
+        status: newStatus,
+        priority: task.priority,
+        courseId: task.course?.id,
+      });
 
-    fetchTasks();
-  } catch (err) {
-    setError("Failed to update task status");
-    console.error(err);
+      await fetchTasks();
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to update task status."));
+      console.error(err);
+    } finally {
+      setBusyAction("");
     }
   };
 
@@ -286,12 +314,21 @@ const getDeadlineLabel = (task) => {
               <option value="HIGH">High</option>
             </select>
 
-            <button type="submit">
-              {editingId ? "Update Task" : "Add Task"}
+            <button type="submit" disabled={busyAction !== ""}>
+              {busyAction === "save"
+                ? "Saving..."
+                : editingId
+                  ? "Update Task"
+                  : "Add Task"}
             </button>
 
             {editingId && (
-              <button type="button" className="cancel-button" onClick={resetForm}>
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={resetForm}
+                disabled={busyAction !== ""}
+              >
                 Cancel
               </button>
             )}
@@ -345,7 +382,9 @@ const getDeadlineLabel = (task) => {
           </select>
         </div>
 
-        {filteredTasks.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">Loading tasks...</div>
+        ) : filteredTasks.length === 0 ? (
           <div className="empty-state">No matching tasks.</div>
         ) : (
           <div className="task-list">
@@ -374,6 +413,7 @@ const getDeadlineLabel = (task) => {
                     <button
                       className="edit-button"
                       onClick={() => handleEdit(task)}
+                      disabled={busyAction !== ""}
                     >
                       Edit
                     </button>
@@ -382,23 +422,32 @@ const getDeadlineLabel = (task) => {
                       <button
                         className="done-button"
                         onClick={() => handleUpdateStatus(task, "DONE")}
+                        disabled={busyAction !== ""}
                       >
-                        Done
+                        {busyAction === `status-${task.id}`
+                          ? "Updating..."
+                          : "Done"}
                       </button>
                     ) : (
                       <button
                         className="undone-button"
                         onClick={() => handleUpdateStatus(task, "NOT_STARTED")}
+                        disabled={busyAction !== ""}
                       >
-                        Undone
+                        {busyAction === `status-${task.id}`
+                          ? "Updating..."
+                          : "Undone"}
                       </button>
                     )}
 
                     <button
                       className="delete-button"
                       onClick={() => handleDelete(task.id)}
+                      disabled={busyAction !== ""}
                     >
-                      Delete
+                      {busyAction === `delete-${task.id}`
+                        ? "Deleting..."
+                        : "Delete"}
                     </button>
                   </div>
                 </div>
