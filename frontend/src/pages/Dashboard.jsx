@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import api from "../api/axiosConfig";
+import { getApiErrorMessage } from "../api/errorMessage";
+
+const pad = (value) => String(value).padStart(2, "0");
+
+const toLocalDateTimeString = (date) =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+    date.getSeconds()
+  )}`;
 
 function Dashboard() {
   const [summary, setSummary] = useState(null);
@@ -8,45 +18,50 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const pad = (value) => String(value).padStart(2, "0");
-
-  const toLocalDateTimeString = (date) => {
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-      date.getDate()
-    )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-      date.getSeconds()
-    )}`;
-  };
-
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    let ignore = false;
 
-  const fetchDashboardData = async () => {
-    try {
-      const now = new Date();
-      const next7Days = new Date();
-      next7Days.setDate(now.getDate() + 7);
+    async function fetchDashboardData() {
+      try {
+        const now = new Date();
+        const next7Days = new Date();
+        next7Days.setDate(now.getDate() + 7);
 
-      const summaryResponse = await api.get("/dashboard/summary");
-      const tasksResponse = await api.get("/dashboard/upcoming-tasks");
-      const eventsResponse = await api.get("/calendar-events", {
-        params: {
-          start: toLocalDateTimeString(now),
-          end: toLocalDateTimeString(next7Days),
-        },
-      });
+        const [summaryResponse, tasksResponse, eventsResponse] =
+          await Promise.all([
+            api.get("/dashboard/summary"),
+            api.get("/dashboard/upcoming-tasks"),
+            api.get("/calendar-events", {
+              params: {
+                start: toLocalDateTimeString(now),
+                end: toLocalDateTimeString(next7Days),
+              },
+            }),
+          ]);
 
-      setSummary(summaryResponse.data);
-      setUpcomingTasks(tasksResponse.data);
-      setUpcomingEvents(eventsResponse.data);
-    } catch (err) {
-      setError("Failed to load dashboard data");
-      console.error(err);
-    } finally {
-      setLoading(false);
+        if (!ignore) {
+          setSummary(summaryResponse.data);
+          setUpcomingTasks(tasksResponse.data);
+          setUpcomingEvents(eventsResponse.data);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(getApiErrorMessage(err, "Failed to load dashboard data."));
+        }
+        console.error(err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
     }
-  };
+
+    fetchDashboardData();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const formatDateTime = (dateTime) => {
     if (!dateTime) return "No date";

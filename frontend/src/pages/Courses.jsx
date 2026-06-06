@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axiosConfig";
+import { getApiErrorMessage } from "../api/errorMessage";
 
 const initialForm = {
   name: "",
@@ -16,20 +17,42 @@ function Courses() {
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busyAction, setBusyAction] = useState("");
 
   useEffect(() => {
-    fetchCourses();
+    let ignore = false;
+
+    async function loadCourses() {
+      try {
+        const response = await api.get("/courses");
+        if (!ignore) setCourses(response.data);
+      } catch (err) {
+        if (!ignore) {
+          setError(getApiErrorMessage(err, "Failed to load courses."));
+        }
+        console.error(err);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    loadCourses();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  const fetchCourses = async () => {
+  async function fetchCourses() {
     try {
       const response = await api.get("/courses");
       setCourses(response.data);
     } catch (err) {
-      setError("Failed to load courses");
+      setError(getApiErrorMessage(err, "Failed to load courses."));
       console.error(err);
     }
-  };
+  }
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -49,6 +72,7 @@ function Courses() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setBusyAction("save");
 
     const payload = {
       ...form,
@@ -65,10 +89,14 @@ function Courses() {
       }
 
       resetForm();
-      fetchCourses();
+      await fetchCourses();
     } catch (err) {
-      setError("Failed to save course. Please check your input.");
+      setError(
+        getApiErrorMessage(err, "Failed to save course. Please check your input.")
+      );
       console.error(err);
+    } finally {
+      setBusyAction("");
     }
   };
 
@@ -94,15 +122,23 @@ function Courses() {
     if (!confirmed) return;
 
     try {
+      setBusyAction(`delete-${id}`);
       await api.delete(`/courses/${id}`);
-      fetchCourses();
+      await fetchCourses();
 
       if (editingId === id) {
         resetForm();
       }
     } catch (err) {
-      setError("Failed to delete course. This course may still have related tasks.");
+      setError(
+        getApiErrorMessage(
+          err,
+          "Failed to delete course. This course may still have related tasks."
+        )
+      );
       console.error(err);
+    } finally {
+      setBusyAction("");
     }
   };
 
@@ -185,12 +221,21 @@ function Courses() {
             onChange={handleChange}
           />
 
-          <button type="submit">
-            {editingId ? "Update Course" : "Add Course"}
+          <button type="submit" disabled={busyAction !== ""}>
+            {busyAction === "save"
+              ? "Saving..."
+              : editingId
+                ? "Update Course"
+                : "Add Course"}
           </button>
 
           {editingId && (
-            <button type="button" className="cancel-button" onClick={resetForm}>
+            <button
+              type="button"
+              className="cancel-button"
+              onClick={resetForm}
+              disabled={busyAction !== ""}
+            >
               Cancel
             </button>
           )}
@@ -203,7 +248,9 @@ function Courses() {
           <p>{courses.length} course(s) registered.</p>
         </div>
 
-        {courses.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">Loading courses...</div>
+        ) : courses.length === 0 ? (
           <div className="empty-state">No courses yet.</div>
         ) : (
           <div className="course-list">
@@ -225,6 +272,7 @@ function Courses() {
                     <button
                       className="edit-button"
                       onClick={() => handleEdit(course)}
+                      disabled={busyAction !== ""}
                     >
                       Edit
                     </button>
@@ -232,8 +280,11 @@ function Courses() {
                     <button
                       className="delete-button"
                       onClick={() => handleDelete(course.id)}
+                      disabled={busyAction !== ""}
                     >
-                      Delete
+                      {busyAction === `delete-${course.id}`
+                        ? "Deleting..."
+                        : "Delete"}
                     </button>
                   </div>
                 </div>
