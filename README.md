@@ -1,4 +1,4 @@
-# Campus Companion
+# Campus Companion (it's a simple version, don't expect too much)
 
 Campus Companion is a full-stack student productivity application for managing
 courses, assignments, deadlines, and personal activities in one place.
