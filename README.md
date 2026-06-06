@@ -249,25 +249,25 @@ Stores persistent data using PostgreSQL.
 
 The dashboard summarizes courses, task progress, urgent deadlines, and upcoming calendar activities.
 
-![Campus Companion Dashboard](docs/screenshots/dashboard.png)
+![Campus Companion Dashboard](https://i.imgur.com/75gxlnF.png)
 
 ### Course Manager
 
 The course manager provides course scheduling details and complete create, update, and delete workflows.
 
-![Campus Companion Course Manager](docs/screenshots/courses.png)
+![Campus Companion Course Manager](https://i.imgur.com/4d84PHt.png)
 
 ### Task Manager
 
 The task manager supports course-linked assignments, status updates, deadline tracking, search, and filtering.
 
-![Campus Companion Task Manager](docs/screenshots/tasks.png)
+![Campus Companion Task Manager](https://i.imgur.com/md7MyjV.png)
 
 ### Activity Calendar
 
 The monthly calendar organizes personal and academic events with reminder settings.
 
-![Campus Companion Activity Calendar](docs/screenshots/calendar.png)
+![Campus Companion Activity Calendar](https://i.imgur.com/JGdr9zV.png)
 
 ## Getting Started
 
