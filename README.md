@@ -1,4 +1,4 @@
-# Campus Companion
+# Campus Companion (it's a simple version so don't expect too much)
 
 Campus Companion is a fullstack student productivity dashboard for managing courses, assignments, deadlines, calendar activities, and semester workload.
 
