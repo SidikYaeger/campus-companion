@@ -217,6 +217,11 @@ Do not commit sensitive local files or credentials, including:
 Use example configuration files such as `application-example.properties` and
 `.env.example` instead.
 
+## Deployment
+
+Deployment notes for Vercel, Render, and managed PostgreSQL are available in
+[`docs/deployment.md`](docs/deployment.md).
+
 ## Author
 
 Created by Zhafir Tectona.
