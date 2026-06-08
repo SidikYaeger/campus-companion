@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +22,7 @@ public class CalendarEventRequest {
     private LocalDateTime endDateTime;
 
     @NotBlank(message = "Event type is required")
+    @Pattern(regexp = "PERSONAL|ACADEMIC|ORGANIZATION", message = "Event type must be PERSONAL, ACADEMIC, or ORGANIZATION")
     private String type;
 
     @NotNull(message = "Reminder time is required")

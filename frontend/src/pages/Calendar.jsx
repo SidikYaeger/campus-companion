@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../api/axiosConfig";
 import { getApiErrorMessage } from "../api/errorMessage";
 
@@ -12,6 +12,8 @@ const initialForm = {
   reminderMinutesBefore: 30,
 };
 
+const allowedEventTypes = ["PERSONAL", "ACADEMIC", "ORGANIZATION"];
+
 const pad = (value) => String(value).padStart(2, "0");
 
 const toLocalDateTimeString = (date) =>
@@ -24,6 +26,10 @@ const toLocalDateTimeString = (date) =>
 const getDateKey = (date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
+const getFormDate = (dateTime) => (dateTime ? dateTime.slice(0, 10) : "");
+
+const getFormTime = (dateTime) => (dateTime ? dateTime.slice(11, 16) : "");
+
 function Calendar() {
   const today = useMemo(() => new Date(), []);
 
@@ -33,7 +39,9 @@ function Calendar() {
 
   const [events, setEvents] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState("");
 
@@ -44,41 +52,12 @@ function Calendar() {
     year: "numeric",
   });
 
-  useEffect(() => {
-    let ignore = false;
+  const fetchEvents = useCallback(async (options = {}) => {
+    const { showLoading = false } = options;
 
-    async function loadEvents() {
-      try {
-        const start = new Date(year, month - 1, 1, 0, 0, 0);
-        const end = new Date(year, month, 0, 23, 59, 59);
-        const response = await api.get("/calendar-events", {
-          params: {
-            start: toLocalDateTimeString(start),
-            end: toLocalDateTimeString(end),
-          },
-        });
-
-        if (!ignore) setEvents(response.data);
-      } catch (err) {
-        if (!ignore) {
-          setError(getApiErrorMessage(err, "Failed to load calendar events."));
-        }
-        console.error(err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-
-    loadEvents();
-
-    return () => {
-      ignore = true;
-    };
-  }, [month, year]);
-
-  async function fetchEvents() {
     try {
-      setError("");
+      if (showLoading) setLoading(true);
+      setLoadError("");
 
       const start = new Date(year, month - 1, 1, 0, 0, 0);
       const end = new Date(year, month, 0, 23, 59, 59);
@@ -92,10 +71,20 @@ function Calendar() {
 
       setEvents(response.data);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Failed to load calendar events."));
+      setLoadError(getApiErrorMessage(err, "Failed to load data."));
       console.error(err);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-  }
+  }, [month, year]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEvents({ showLoading: true });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [fetchEvents]);
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month - 1, 1);
@@ -132,34 +121,105 @@ function Calendar() {
     }));
   };
 
+  const resetForm = () => {
+    setForm(initialForm);
+    setEditingEventId(null);
+    setError("");
+  };
+
+  const validateForm = () => {
+    if (!form.title.trim()) {
+      return "Event title is required.";
+    }
+
+    if (!form.date) {
+      return "Event date is required.";
+    }
+
+    if (!form.startTime || !form.endTime) {
+      return "Start time and end time are required.";
+    }
+
+    const startDateTime = new Date(`${form.date}T${form.startTime}:00`);
+    const endDateTime = new Date(`${form.date}T${form.endTime}:00`);
+
+    if (startDateTime >= endDateTime) {
+      return "End time must be after start time.";
+    }
+
+    if (Number(form.reminderMinutesBefore) < 0) {
+      return "Reminder cannot be negative.";
+    }
+
+    if (!allowedEventTypes.includes(form.type)) {
+      return "Event type must be Personal, Academic, or Organization.";
+    }
+
+    return "";
+  };
+
+  const buildPayload = () => ({
+    title: form.title.trim(),
+    description: form.description,
+    startDateTime: `${form.date}T${form.startTime}:00`,
+    endDateTime: `${form.date}T${form.endTime}:00`,
+    type: form.type,
+    reminderMinutesBefore: Number(form.reminderMinutesBefore),
+  });
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError("");
+
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setBusyAction("save");
 
     try {
-      await api.post("/calendar-events", {
-        title: form.title,
-        description: form.description,
-        startDateTime: `${form.date}T${form.startTime}:00`,
-        endDateTime: `${form.date}T${form.endTime}:00`,
-        type: form.type,
-        reminderMinutesBefore: Number(form.reminderMinutesBefore),
-      });
+      const payload = buildPayload();
 
-      setForm(initialForm);
+      if (editingEventId) {
+        await api.put(`/calendar-events/${editingEventId}`, payload);
+      } else {
+        await api.post("/calendar-events", payload);
+      }
+
+      resetForm();
       await fetchEvents();
     } catch (err) {
       setError(
         getApiErrorMessage(
           err,
-          "Failed to create event. Please check your input."
+          editingEventId
+            ? "Failed to update event. Please check your input."
+            : "Failed to create event. Please check your input."
         )
       );
       console.error(err);
     } finally {
       setBusyAction("");
     }
+  };
+
+  const handleEdit = (event) => {
+    setEditingEventId(event.id);
+    setError("");
+
+    setForm({
+      title: event.title || "",
+      description: event.description || "",
+      date: getFormDate(event.startDateTime),
+      startTime: getFormTime(event.startDateTime),
+      endTime: getFormTime(event.endDateTime),
+      type: allowedEventTypes.includes(event.type) ? event.type : "PERSONAL",
+      reminderMinutesBefore: event.reminderMinutesBefore ?? 30,
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id) => {
@@ -171,6 +231,10 @@ function Calendar() {
       setBusyAction(`delete-${id}`);
       await api.delete(`/calendar-events/${id}`);
       await fetchEvents();
+
+      if (editingEventId === id) {
+        resetForm();
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to delete event."));
       console.error(err);
@@ -200,8 +264,12 @@ function Calendar() {
 
       <section className="section">
         <div className="section-header">
-          <h2>Add Activity</h2>
-          <p>Create a simple calendar event outside your course schedule.</p>
+          <h2>{editingEventId ? "Edit Activity" : "Add Activity"}</h2>
+          <p>
+            {editingEventId
+              ? "Update the selected calendar event."
+              : "Create a simple calendar event outside your course schedule."}
+          </p>
         </div>
 
         {error && <p className="error-box">{error}</p>}
@@ -244,10 +312,8 @@ function Calendar() {
 
           <select name="type" value={form.type} onChange={handleChange}>
             <option value="PERSONAL">Personal</option>
-            <option value="STUDY">Study</option>
-            <option value="MEETING">Meeting</option>
-            <option value="EXAM">Exam</option>
-            <option value="OTHER">Other</option>
+            <option value="ACADEMIC">Academic</option>
+            <option value="ORGANIZATION">Organization</option>
           </select>
 
           <select
@@ -263,8 +329,23 @@ function Calendar() {
           </select>
 
           <button type="submit" disabled={busyAction !== ""}>
-            {busyAction === "save" ? "Saving..." : "Add Event"}
+            {busyAction === "save"
+              ? "Saving..."
+              : editingEventId
+                ? "Update Event"
+                : "Add Event"}
           </button>
+
+          {editingEventId && (
+            <button
+              type="button"
+              className="cancel-button"
+              onClick={resetForm}
+              disabled={busyAction !== ""}
+            >
+              Cancel
+            </button>
+          )}
         </form>
       </section>
 
@@ -296,7 +377,14 @@ function Calendar() {
         </div>
 
         {loading ? (
-          <div className="empty-state">Loading calendar events...</div>
+          <div className="empty-state">Loading...</div>
+        ) : loadError ? (
+          <div className="state-panel error-state">
+            <p>{loadError}</p>
+            <button type="button" onClick={() => fetchEvents({ showLoading: true })}>
+              Try again
+            </button>
+          </div>
         ) : (
           <div className="calendar-grid">
             {calendarDays.map((day, index) => {
@@ -318,27 +406,46 @@ function Calendar() {
                   <div className="calendar-date">{day.getDate()}</div>
 
                   <div className="calendar-events">
-                    {dayEvents.map((event) => (
-                      <div className="calendar-event" key={event.id}>
-                        <div>
-                          <strong>{event.title}</strong>
-                          <small>
-                            {formatTime(event.startDateTime)} -{" "}
-                            {formatTime(event.endDateTime)}
-                          </small>
-                          <span>{event.type}</span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(event.id)}
-                          disabled={busyAction !== ""}
-                          aria-label={`Delete ${event.title}`}
-                        >
-                          X
-                        </button>
+                    {dayEvents.length === 0 ? (
+                      <div className="calendar-empty-day">
+                        No events on this date.
                       </div>
-                    ))}
+                    ) : (
+                      dayEvents.map((event) => (
+                        <div className="calendar-event" key={event.id}>
+                          <div>
+                            <strong>{event.title}</strong>
+                            <small>
+                              {formatTime(event.startDateTime)} -{" "}
+                              {formatTime(event.endDateTime)}
+                            </small>
+                            <span>{event.type}</span>
+                          </div>
+
+                          <div className="calendar-event-actions">
+                            <button
+                              type="button"
+                              className="edit-button"
+                              onClick={() => handleEdit(event)}
+                              disabled={busyAction !== ""}
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              className="delete-button"
+                              onClick={() => handleDelete(event.id)}
+                              disabled={busyAction !== ""}
+                            >
+                              {busyAction === `delete-${event.id}`
+                                ? "Deleting..."
+                                : "Delete"}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               );

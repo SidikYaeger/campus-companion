@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../api/axiosConfig";
 import { getApiErrorMessage } from "../api/errorMessage";
 
@@ -18,50 +18,45 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let ignore = false;
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-    async function fetchDashboardData() {
-      try {
-        const now = new Date();
-        const next7Days = new Date();
-        next7Days.setDate(now.getDate() + 7);
+      const now = new Date();
+      const next7Days = new Date();
+      next7Days.setDate(now.getDate() + 7);
 
-        const [summaryResponse, tasksResponse, eventsResponse] =
-          await Promise.all([
-            api.get("/dashboard/summary"),
-            api.get("/dashboard/upcoming-tasks"),
-            api.get("/calendar-events", {
-              params: {
-                start: toLocalDateTimeString(now),
-                end: toLocalDateTimeString(next7Days),
-              },
-            }),
-          ]);
+      const [summaryResponse, tasksResponse, eventsResponse] =
+        await Promise.all([
+          api.get("/dashboard/summary"),
+          api.get("/dashboard/upcoming-tasks"),
+          api.get("/calendar-events", {
+            params: {
+              start: toLocalDateTimeString(now),
+              end: toLocalDateTimeString(next7Days),
+            },
+          }),
+        ]);
 
-        if (!ignore) {
-          setSummary(summaryResponse.data);
-          setUpcomingTasks(tasksResponse.data);
-          setUpcomingEvents(eventsResponse.data);
-        }
-      } catch (err) {
-        if (!ignore) {
-          setError(getApiErrorMessage(err, "Failed to load dashboard data."));
-        }
-        console.error(err);
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
+      setSummary(summaryResponse.data);
+      setUpcomingTasks(tasksResponse.data);
+      setUpcomingEvents(eventsResponse.data);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to load data."));
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    fetchDashboardData();
-
-    return () => {
-      ignore = true;
-    };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDashboardData();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [fetchDashboardData]);
 
   const formatDateTime = (dateTime) => {
     if (!dateTime) return "No date";
@@ -92,11 +87,18 @@ function Dashboard() {
   };
 
   if (loading) {
-    return <p className="loading-text">Loading dashboard...</p>;
+    return <p className="loading-text">Loading...</p>;
   }
 
   if (error) {
-    return <p className="error-text">{error}</p>;
+    return (
+      <div className="state-panel error-state page-state">
+        <p>{error}</p>
+        <button type="button" onClick={fetchDashboardData}>
+          Try again
+        </button>
+      </div>
+    );
   }
 
   return (

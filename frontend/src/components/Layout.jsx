@@ -10,6 +10,7 @@ function Layout() {
           <Link to="/">Dashboard</Link>
           <Link to="/courses">Courses</Link>
           <Link to="/tasks">Tasks</Link>
+          <Link to="/schedule">Schedule</Link>
           <Link to="/calendar">Calendar</Link>
         </nav>
       </aside>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../api/axiosConfig";
 import { getApiErrorMessage } from "../api/errorMessage";
 
@@ -17,42 +17,34 @@ function Courses() {
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState("");
 
-  useEffect(() => {
-    let ignore = false;
+  const fetchCourses = useCallback(async (options = {}) => {
+    const { showLoading = false } = options;
 
-    async function loadCourses() {
-      try {
-        const response = await api.get("/courses");
-        if (!ignore) setCourses(response.data);
-      } catch (err) {
-        if (!ignore) {
-          setError(getApiErrorMessage(err, "Failed to load courses."));
-        }
-        console.error(err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-
-    loadCourses();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  async function fetchCourses() {
     try {
+      if (showLoading) setLoading(true);
+      setLoadError("");
+
       const response = await api.get("/courses");
       setCourses(response.data);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Failed to load courses."));
+      setLoadError(getApiErrorMessage(err, "Failed to load data."));
       console.error(err);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCourses({ showLoading: true });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [fetchCourses]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -132,6 +124,7 @@ function Courses() {
     } catch (err) {
       const databaseMessage = err.response?.data?.message || "";
       const hasRelatedTasks =
+        err.response?.status === 409 ||
         databaseMessage.includes("foreign key constraint") ||
         databaseMessage.includes("still referenced from table \"tasks\"");
 
@@ -253,9 +246,19 @@ function Courses() {
         </div>
 
         {loading ? (
-          <div className="empty-state">Loading courses...</div>
+          <div className="empty-state">Loading...</div>
+        ) : loadError ? (
+          <div className="state-panel error-state">
+            <p>{loadError}</p>
+            <button
+              type="button"
+              onClick={() => fetchCourses({ showLoading: true })}
+            >
+              Try again
+            </button>
+          </div>
         ) : courses.length === 0 ? (
-          <div className="empty-state">No courses yet.</div>
+          <div className="empty-state">No courses added yet.</div>
         ) : (
           <div className="course-list">
             {courses.map((course) => (

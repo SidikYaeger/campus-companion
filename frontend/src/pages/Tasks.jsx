@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../api/axiosConfig";
 import { getApiErrorMessage } from "../api/errorMessage";
 
@@ -11,12 +11,16 @@ const initialForm = {
   courseId: "",
 };
 
+const allowedPriorities = ["LOW", "MEDIUM", "HIGH"];
+const allowedStatuses = ["NOT_STARTED", "IN_PROGRESS", "DONE"];
+
 function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState("");
 
@@ -25,41 +29,42 @@ function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [courseFilter, setCourseFilter] = useState("ALL");
 
-  useEffect(() => {
-    let ignore = false;
+  const loadData = useCallback(async (options = {}) => {
+    const { showLoading = false } = options;
 
-    async function loadData() {
-      try {
-        const [tasksResponse, coursesResponse] = await Promise.all([
-          api.get("/tasks"),
-          api.get("/courses"),
-        ]);
+    try {
+      if (showLoading) setLoading(true);
+      setLoadError("");
 
-        if (!ignore) {
-          setTasks(tasksResponse.data);
-          setCourses(coursesResponse.data);
-        }
-      } catch (err) {
-        if (!ignore) setError(getApiErrorMessage(err, "Failed to load tasks."));
-        console.error(err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
+      const [tasksResponse, coursesResponse] = await Promise.all([
+        api.get("/tasks"),
+        api.get("/courses"),
+      ]);
+
+      setTasks(tasksResponse.data);
+      setCourses(coursesResponse.data);
+    } catch (err) {
+      setLoadError(getApiErrorMessage(err, "Failed to load data."));
+      console.error(err);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-
-    loadData();
-
-    return () => {
-      ignore = true;
-    };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadData({ showLoading: true });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
   async function fetchTasks() {
     try {
       const response = await api.get("/tasks");
       setTasks(response.data);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Failed to load tasks."));
+      setLoadError(getApiErrorMessage(err, "Failed to load data."));
       console.error(err);
     }
   }
@@ -79,15 +84,50 @@ function Tasks() {
     setError("");
   };
 
+  const validateForm = () => {
+    if (!form.title.trim()) {
+      return "Task title is required.";
+    }
+
+    const selectedCourseId = Number(form.courseId);
+    const hasValidCourse = courses.some((course) => course.id === selectedCourseId);
+
+    if (!selectedCourseId || !hasValidCourse) {
+      return "Please select a valid course.";
+    }
+
+    if (!allowedPriorities.includes(form.priority)) {
+      return "Priority must be Low, Medium, or High.";
+    }
+
+    if (!allowedStatuses.includes(form.status)) {
+      return "Status must be Not Started, In Progress, or Done.";
+    }
+
+    if (form.deadline && Number.isNaN(new Date(form.deadline).getTime())) {
+      return "Deadline must be a valid date and time.";
+    }
+
+    return "";
+  };
+
   const buildPayload = () => ({
     ...form,
+    title: form.title.trim(),
     deadline: form.deadline ? `${form.deadline}:00` : null,
     courseId: form.courseId ? Number(form.courseId) : null,
   });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError("");
+
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setBusyAction("save");
 
     try {
@@ -266,9 +306,18 @@ const getDeadlineLabel = (task) => {
 
         {error && <p className="error-box">{error}</p>}
 
-        {courses.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">Loading...</div>
+        ) : loadError ? (
+          <div className="state-panel error-state">
+            <p>{loadError}</p>
+            <button type="button" onClick={() => loadData({ showLoading: true })}>
+              Try again
+            </button>
+          </div>
+        ) : courses.length === 0 ? (
           <div className="empty-state">
-            You need to add a course first before creating tasks.
+            No courses added yet.
           </div>
         ) : (
           <form className="task-form" onSubmit={handleSubmit}>
@@ -383,7 +432,18 @@ const getDeadlineLabel = (task) => {
         </div>
 
         {loading ? (
-          <div className="empty-state">Loading tasks...</div>
+          <div className="empty-state">Loading...</div>
+        ) : loadError ? (
+          <div className="state-panel error-state">
+            <p>{loadError}</p>
+            <button type="button" onClick={() => loadData({ showLoading: true })}>
+              Try again
+            </button>
+          </div>
+        ) : tasks.length === 0 ? (
+          <div className="empty-state">
+            No tasks yet. Add your first task to start organizing your study plan.
+          </div>
         ) : filteredTasks.length === 0 ? (
           <div className="empty-state">No matching tasks.</div>
         ) : (

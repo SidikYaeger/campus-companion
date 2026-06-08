@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import Tasks from "./pages/Tasks";
+import Schedule from "./pages/Schedule";
 import "./App.css";
 import Calendar from "./pages/Calendar";
 
@@ -14,6 +15,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="courses" element={<Courses />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="schedule" element={<Schedule />} />
           <Route path="calendar" element={<Calendar />} />
         </Route>
       </Routes>
