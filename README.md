@@ -1,13 +1,27 @@
-# Campus Companion (it's a simple version, don't expect too much)
+# Campus Companion (pls don't expect too much)
 
-Campus Companion is a full-stack student productivity application for managing
-courses, assignments, deadlines, and personal activities in one place.
+A full-stack student productivity application for managing courses, assignments,
+weekly schedules, deadlines, and calendar activities in one place.
 
-The application helps students organize their semester through a dashboard that
-summarizes their academic workload, upcoming tasks, course schedules, and
-calendar events.
+Each user has a private account and can only access their own academic data.
+
+## Live Demo
+
+- Application: [campus-companion-woad.vercel.app](https://campus-companion-woad.vercel.app)
+- API health check: [campus-companion-4ltd.onrender.com/api/health](https://campus-companion-4ltd.onrender.com/api/health)
+
+> The backend uses Render's free tier, so the first request after a period of
+> inactivity may take a moment while the service wakes up.
 
 ## Features
+
+### Authentication and Privacy
+
+- Register and log in with email and password
+- Passwords are securely stored as BCrypt hashes
+- Browser sessions remain active across refreshes
+- Courses, tasks, schedules, dashboard totals, and events are isolated per user
+- Users cannot read, edit, or delete another user's data
 
 ### Dashboard
 
@@ -26,84 +40,70 @@ calendar events.
 
 - Add, view, edit, and delete tasks
 - Connect tasks to courses
-- Set task status, priority, and deadline
+- Set status, priority, and optional deadlines
 - Mark tasks as done or return them to not started
 - Search and filter tasks by course, status, and priority
 - Automatically identify overdue, due-soon, upcoming, and completed tasks
 
-### Activity Calendar
+### Schedule and Calendar
 
+- View courses in a responsive weekly schedule
+- Group courses by day and sort them by start time
 - View activities in a monthly calendar
-- Add and delete personal or academic activities
-- Set activity type and reminder time
-- Display upcoming activities on the dashboard
+- Add, edit, and delete personal, academic, or organization events
+- Set event reminder times
 
-### Validation and Error Handling
+### User Experience
 
-- Validate course, task, and calendar event input
-- Return structured API error responses
-- Display understandable error messages in the frontend
-- Prevent duplicate actions while requests are processing
-
-### Accounts and Private Data
-
-- Register and log in with an email and password
-- Keep sessions active across browser refreshes
-- Separate courses, tasks, dashboard totals, schedules, and calendar events by user
-- Prevent users from reading, editing, or deleting another user's data
+- Clear validation and API error messages
+- Loading, empty, and retry states
+- Responsive layouts for desktop and mobile
+- Duplicate actions are prevented while requests are processing
 
 ## Screenshots
 
 ### Dashboard
 
-![Campus Companion Dashboard](https://i.imgur.com/75gxlnF.png)
+![Campus Companion Dashboard](https://i.imgur.com/5isXK8E.png)
 
 ### Course Manager
 
-![Campus Companion Course Manager](https://i.imgur.com/4d84PHt.png)
+![Campus Companion Course Manager](https://i.imgur.com/noi8IcJ.png)
 
 ### Task Manager
 
-![Campus Companion Task Manager](https://i.imgur.com/md7MyjV.png)
+![Campus Companion Task Manager](https://i.imgur.com/BEIXCwN.png)
+
+### Weekly Schedule
+
+![Campus Companion Weekly Schedule](https://i.imgur.com/BNSRk5Z.png)
 
 ### Activity Calendar
 
-![Campus Companion Activity Calendar](https://i.imgur.com/JGdr9zV.png)
+![Campus Companion Activity Calendar](https://i.imgur.com/7lIKVid.png)
 
 ## Tech Stack
 
-### Frontend
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React, Vite, JavaScript, React Router, Axios, CSS |
+| Backend | Java 21, Spring Boot, Spring Web MVC, Spring Data JPA, Jakarta Validation |
+| Security | BCrypt password hashing, database-backed bearer sessions |
+| Database | PostgreSQL, hosted on Neon |
+| Deployment | Vercel frontend, Render backend, Neon database |
 
-- React
-- Vite
-- JavaScript
-- React Router DOM
-- Axios
-- CSS
+## Architecture
 
-### Backend
+```text
+React Frontend
+      |
+      | REST API + Bearer Token
+      v
+Controller -> Service -> Repository -> Neon PostgreSQL
+```
 
-- Java 21
-- Spring Boot
-- Spring Web
-- Spring Data JPA
-- Jakarta Validation
-- Maven
-
-### Database
-
-- PostgreSQL
-
-## Requirements
-
-Install the following software before running the project:
-
-- Java JDK 21
-- Node.js and npm
-- PostgreSQL
-- Git
-- IntelliJ IDEA or another Java IDE
-- VS Code or another frontend editor
+Backend endpoints identify the authenticated user from their bearer session.
+Every course, task, and calendar query is filtered using that user's ownership.
 
 ## Project Structure
 
@@ -119,20 +119,23 @@ campus-companion/
 |   |   |-- repository/
 |   |   `-- service/
 |   `-- src/main/resources/
-`-- frontend/
-    `-- src/
-        |-- api/
-        |-- components/
-        `-- pages/
+|-- frontend/
+|   `-- src/
+|       |-- api/
+|       |-- auth/
+|       |-- components/
+|       `-- pages/
+`-- docs/
 ```
 
-The backend uses a layered architecture:
+## Local Setup
 
-```text
-Controller -> Service -> Repository -> PostgreSQL
-```
+### Requirements
 
-## Setup
+- Java JDK 21
+- Node.js and npm
+- PostgreSQL
+- Git
 
 ### 1. Clone the Repository
 
@@ -141,7 +144,7 @@ git clone https://github.com/SidikYaeger/campus-companion.git
 cd campus-companion
 ```
 
-### 2. Create the Database
+### 2. Configure PostgreSQL
 
 Create a PostgreSQL database:
 
@@ -149,35 +152,25 @@ Create a PostgreSQL database:
 campus_companion_db
 ```
 
-### 3. Configure the Backend
-
-Create this local configuration file:
+Create:
 
 ```text
 backend/src/main/resources/application.properties
 ```
 
-Use `application-example.properties` as a template and provide your PostgreSQL
-username and password.
+Use `application-example.properties` as a template and provide your local
+database credentials. This file is ignored by Git.
 
-Do not commit `application.properties` because it contains local database
-credentials.
+### 3. Run the Backend
 
-### 4. Run the Backend
-
-Open the `backend` folder in IntelliJ IDEA and run:
-
-```text
-BackendApplication.java
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
 ```
 
-The backend runs at:
+The API runs at `http://localhost:8080`.
 
-```text
-http://localhost:8080
-```
-
-### 5. Run the Frontend
+### 4. Run the Frontend
 
 ```bash
 cd frontend
@@ -185,16 +178,25 @@ npm install
 npm run dev
 ```
 
-The frontend runs at:
+The frontend runs at `http://localhost:5173` and connects to
+`http://localhost:8080/api` by default.
 
-```text
-http://localhost:5173
+## Environment Variables
+
+### Backend
+
+```env
+SPRING_DATASOURCE_URL=jdbc:postgresql://HOST/DATABASE?sslmode=require
+SPRING_DATASOURCE_USERNAME=USERNAME
+SPRING_DATASOURCE_PASSWORD=PASSWORD
+JPA_DDL_AUTO=update
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend-domain.vercel.app
 ```
 
-The frontend uses `VITE_API_BASE_URL` when configured and otherwise connects to:
+### Frontend
 
-```text
-http://localhost:8080/api
+```env
+VITE_API_BASE_URL=https://your-backend-domain.onrender.com/api
 ```
 
 ## Main API Endpoints
@@ -204,7 +206,7 @@ http://localhost:8080/api
 | GET | `/api/health` | Check backend availability |
 | POST | `/api/auth/register` | Create an account |
 | POST | `/api/auth/login` | Log in |
-| GET | `/api/auth/me` | Get the current user |
+| GET | `/api/auth/me` | Get the authenticated user |
 | POST | `/api/auth/logout` | Log out |
 | GET, POST | `/api/courses` | List or create courses |
 | GET, PUT, DELETE | `/api/courses/{id}` | Read, update, or delete a course |
@@ -215,23 +217,38 @@ http://localhost:8080/api
 | GET, POST | `/api/calendar-events` | List or create calendar events |
 | GET, PUT, DELETE | `/api/calendar-events/{id}` | Read, update, or delete an event |
 
-## Security Notes
+Except for health checks and authentication, API endpoints require:
 
-Do not commit sensitive local files or credentials, including:
+```http
+Authorization: Bearer SESSION_TOKEN
+```
 
-- `application.properties`
-- `.env`
-- Database passwords
-- API keys and tokens
-- Private keys
+## Verification
 
-Use example configuration files such as `application-example.properties` and
-`.env.example` instead.
+```bash
+# Frontend
+cd frontend
+npm run lint
+npm run build
+```
+
+```powershell
+# Backend
+cd backend
+.\mvnw.cmd clean test
+```
 
 ## Deployment
 
-Deployment notes for Vercel, Render, and managed PostgreSQL are available in
-[`docs/deployment.md`](docs/deployment.md).
+See [docs/deployment.md](docs/deployment.md) for the Vercel, Render, and Neon
+deployment guide.
+
+## Security Notes
+
+- Never commit `.env`, `application.properties`, passwords, or API tokens.
+- Passwords are stored as BCrypt hashes and cannot be recovered as plain text.
+- Production database credentials are configured through Render environment
+  variables.
 
 ## Author
 
