@@ -1,5 +1,6 @@
 package com.campuscompanion.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,11 @@ public class CalendarEvent {
     private String type;
 
     private Integer reminderMinutesBefore;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 
     public CalendarEvent() {
     }
@@ -68,6 +74,10 @@ public class CalendarEvent {
         return reminderMinutesBefore;
     }
 
+    public User getOwner() {
+        return owner;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -94,5 +104,9 @@ public class CalendarEvent {
 
     public void setReminderMinutesBefore(Integer reminderMinutesBefore) {
         this.reminderMinutesBefore = reminderMinutesBefore;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }

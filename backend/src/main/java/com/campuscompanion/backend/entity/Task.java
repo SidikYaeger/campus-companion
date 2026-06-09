@@ -1,5 +1,6 @@
 package com.campuscompanion.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,11 @@ public class Task {
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 
     public Task() {
     }
@@ -69,6 +75,10 @@ public class Task {
         return course;
     }
 
+    public User getOwner() {
+        return owner;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -95,5 +105,9 @@ public class Task {
 
     public void setCourse(Course course) {
         this.course = course;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }

@@ -1,5 +1,6 @@
 package com.campuscompanion.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -38,6 +39,11 @@ public class Course {
     @Min(value = 1, message = "SKS must be at least 1")
     @Max(value = 6, message = "SKS must be at most 6")
     private Integer sks;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 
     public Course() {
     }
@@ -86,6 +92,10 @@ public class Course {
         return sks;
     }
 
+    public User getOwner() {
+        return owner;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -116,5 +126,9 @@ public class Course {
 
     public void setSks(Integer sks) {
         this.sks = sks;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }

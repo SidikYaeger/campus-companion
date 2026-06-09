@@ -14,19 +14,26 @@ public class DashboardService {
 
     private final CourseRepository courseRepository;
     private final TaskRepository taskRepository;
+    private final AuthService authService;
 
-    public DashboardService(CourseRepository courseRepository, TaskRepository taskRepository) {
+    public DashboardService(
+            CourseRepository courseRepository,
+            TaskRepository taskRepository,
+            AuthService authService
+    ) {
         this.courseRepository = courseRepository;
         this.taskRepository = taskRepository;
+        this.authService = authService;
     }
 
     public DashboardSummary getDashboardSummary() {
-        List<Task> allTasks = taskRepository.findAll();
+        Long ownerId = authService.requireUser().getId();
+        List<Task> allTasks = taskRepository.findByOwnerId(ownerId);
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime next24Hours = now.plusHours(24);
 
-        long totalCourses = courseRepository.count();
+        long totalCourses = courseRepository.countByOwnerId(ownerId);
         long totalTasks = allTasks.size();
 
         long completedTasks = allTasks.stream()
@@ -64,6 +71,9 @@ public class DashboardService {
     }
 
     public List<Task> getUpcomingTasks() {
-        return taskRepository.findTop5ByStatusNotOrderByDeadlineAsc("DONE");
+        return taskRepository.findTop5ByOwnerIdAndStatusNotOrderByDeadlineAsc(
+                authService.requireUser().getId(),
+                "DONE"
+        );
     }
 }

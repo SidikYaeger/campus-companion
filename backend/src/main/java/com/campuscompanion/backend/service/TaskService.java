@@ -3,6 +3,7 @@ package com.campuscompanion.backend.service;
 import com.campuscompanion.backend.dto.TaskRequest;
 import com.campuscompanion.backend.entity.Course;
 import com.campuscompanion.backend.entity.Task;
+import com.campuscompanion.backend.entity.User;
 import com.campuscompanion.backend.repository.CourseRepository;
 import com.campuscompanion.backend.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -17,27 +18,32 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final CourseRepository courseRepository;
+    private final AuthService authService;
 
-    public TaskService(TaskRepository taskRepository, CourseRepository courseRepository) {
+    public TaskService(TaskRepository taskRepository, CourseRepository courseRepository, AuthService authService) {
         this.taskRepository = taskRepository;
         this.courseRepository = courseRepository;
+        this.authService = authService;
     }
 
     public List<Task> getAllTasks(Long courseId) {
+        Long ownerId = authService.requireUser().getId();
+
         if (courseId != null) {
-            return taskRepository.findByCourseId(courseId);
+            return taskRepository.findByCourseIdAndOwnerId(courseId, ownerId);
         }
 
-        return taskRepository.findAll();
+        return taskRepository.findByOwnerId(ownerId);
     }
 
     public Task getTaskById(Long id) {
-        return taskRepository.findById(id)
+        return taskRepository.findByIdAndOwnerId(id, authService.requireUser().getId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Task not found"));
     }
 
     public Task createTask(TaskRequest request) {
-        Course course = getCourseById(request.getCourseId());
+        User owner = authService.requireUser();
+        Course course = getCourseById(request.getCourseId(), owner.getId());
 
         Task task = new Task();
         task.setTitle(request.getTitle());
@@ -46,13 +52,14 @@ public class TaskService {
         task.setStatus(request.getStatus());
         task.setPriority(request.getPriority());
         task.setCourse(course);
+        task.setOwner(owner);
 
         return taskRepository.save(task);
     }
 
     public Task updateTask(Long id, TaskRequest request) {
         Task task = getTaskById(id);
-        Course course = getCourseById(request.getCourseId());
+        Course course = getCourseById(request.getCourseId(), authService.requireUser().getId());
 
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
@@ -69,8 +76,8 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
-    private Course getCourseById(Long courseId) {
-        return courseRepository.findById(courseId)
+    private Course getCourseById(Long courseId, Long ownerId) {
+        return courseRepository.findByIdAndOwnerId(courseId, ownerId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Course not found"));
     }
 }

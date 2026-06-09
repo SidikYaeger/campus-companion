@@ -4,35 +4,65 @@ Campus Companion is deployed as three pieces:
 
 - Frontend: Vercel
 - Backend: Render Web Service
-- Database: PostgreSQL from Supabase, Neon, or Render PostgreSQL
+- Database: Neon PostgreSQL
 
-## 1. Prepare PostgreSQL
+## What You Need
 
-Create a PostgreSQL database and keep these values:
+Before clicking deploy, prepare:
+
+- GitHub account with this repository pushed to `main`
+- Neon account for PostgreSQL
+- Render account for the backend API
+- Vercel account for the frontend
+- Final Vercel frontend URL, after frontend deploy
+- Final Render backend URL, after backend deploy
+
+Keep these values ready:
+
+```text
+Neon host
+Neon database name
+Neon username
+Neon password
+Render backend URL
+Vercel frontend URL
+```
+
+Never commit real database passwords or production `.env` files.
+
+## 1. Prepare Neon PostgreSQL
+
+Create a Neon project and database, then keep these values from the Neon
+connection details:
 
 - Database host
 - Database port
 - Database name
 - Database username
 - Database password
-- External connection URL
+- Pooled or direct connection string
 
-The backend needs a JDBC URL:
+The backend needs a JDBC URL. For Neon, use this shape:
 
 ```text
-jdbc:postgresql://HOST:PORT/DATABASE_NAME
+jdbc:postgresql://HOST/DATABASE_NAME?sslmode=require
 ```
 
-If the provider requires SSL, append the provider's required SSL query string.
-For many managed PostgreSQL providers this is commonly:
+If Neon gives a host with a port, keep it:
 
 ```text
 jdbc:postgresql://HOST:PORT/DATABASE_NAME?sslmode=require
 ```
 
+Use the same username and password shown in Neon. For a small Render backend,
+the pooled connection string is usually a good default.
+
 ## 2. Deploy Backend to Render
 
 Use `render.yaml` or create a Render Web Service manually.
+
+If you deploy using the existing `render.yaml`, keep the repository root as the
+Render blueprint root. The file already points Render to `./backend/Dockerfile`.
 
 Recommended settings:
 
@@ -45,8 +75,8 @@ Set these Render environment variables:
 
 ```text
 SPRING_DATASOURCE_URL=jdbc:postgresql://HOST:PORT/DATABASE_NAME?sslmode=require
-SPRING_DATASOURCE_USERNAME=your_database_username
-SPRING_DATASOURCE_PASSWORD=your_database_password
+SPRING_DATASOURCE_USERNAME=your_neon_username
+SPRING_DATASOURCE_PASSWORD=your_neon_password
 CORS_ALLOWED_ORIGINS=https://your-vercel-domain.vercel.app
 JPA_DDL_AUTO=update
 ```
@@ -100,8 +130,13 @@ Redeploy or restart the Render backend after changing CORS.
 
 - Backend `/api/health` returns a successful response.
 - Frontend opens without console CORS errors.
+- A new account can register and log in.
+- Two different accounts cannot see each other's data.
 - Dashboard can load summary data.
 - Courses can be created and listed.
 - Tasks can be created with a course.
 - Calendar events can be created, edited, and deleted.
 - Schedule shows courses grouped by day.
+
+Existing records created before account support do not have an owner and are
+intentionally hidden from registered users.

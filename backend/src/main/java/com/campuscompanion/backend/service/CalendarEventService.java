@@ -2,6 +2,7 @@ package com.campuscompanion.backend.service;
 
 import com.campuscompanion.backend.dto.CalendarEventRequest;
 import com.campuscompanion.backend.entity.CalendarEvent;
+import com.campuscompanion.backend.entity.User;
 import com.campuscompanion.backend.repository.CalendarEventRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,27 +17,36 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class CalendarEventService {
 
     private final CalendarEventRepository calendarEventRepository;
+    private final AuthService authService;
 
-    public CalendarEventService(CalendarEventRepository calendarEventRepository) {
+    public CalendarEventService(CalendarEventRepository calendarEventRepository, AuthService authService) {
         this.calendarEventRepository = calendarEventRepository;
+        this.authService = authService;
     }
 
     public List<CalendarEvent> getAllEvents(LocalDateTime start, LocalDateTime end) {
+        Long ownerId = authService.requireUser().getId();
+
         if (start != null && end != null) {
-            return calendarEventRepository.findByStartDateTimeBetweenOrderByStartDateTimeAsc(start, end);
+            return calendarEventRepository.findByOwnerIdAndStartDateTimeBetweenOrderByStartDateTimeAsc(
+                    ownerId,
+                    start,
+                    end
+            );
         }
 
-        return calendarEventRepository.findAll();
+        return calendarEventRepository.findByOwnerId(ownerId);
     }
 
     public CalendarEvent getEventById(Long id) {
-        return calendarEventRepository.findById(id)
+        return calendarEventRepository.findByIdAndOwnerId(id, authService.requireUser().getId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Calendar event not found"));
     }
 
     public CalendarEvent createEvent(CalendarEventRequest request) {
         validateDateTime(request);
 
+        User owner = authService.requireUser();
         CalendarEvent event = new CalendarEvent();
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
@@ -44,6 +54,7 @@ public class CalendarEventService {
         event.setEndDateTime(request.getEndDateTime());
         event.setType(request.getType());
         event.setReminderMinutesBefore(request.getReminderMinutesBefore());
+        event.setOwner(owner);
 
         return calendarEventRepository.save(event);
     }
@@ -69,8 +80,8 @@ public class CalendarEventService {
     }
 
     private void validateDateTime(CalendarEventRequest request) {
-        if (request.getEndDateTime().isBefore(request.getStartDateTime())) {
-            throw new ResponseStatusException(BAD_REQUEST, "End time cannot be before start time");
+        if (!request.getEndDateTime().isAfter(request.getStartDateTime())) {
+            throw new ResponseStatusException(BAD_REQUEST, "End time must be after start time");
         }
     }
 }

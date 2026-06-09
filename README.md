@@ -45,6 +45,13 @@ calendar events.
 - Display understandable error messages in the frontend
 - Prevent duplicate actions while requests are processing
 
+### Accounts and Private Data
+
+- Register and log in with an email and password
+- Keep sessions active across browser refreshes
+- Separate courses, tasks, dashboard totals, schedules, and calendar events by user
+- Prevent users from reading, editing, or deleting another user's data
+
 ## Screenshots
 
 ### Dashboard
@@ -195,6 +202,10 @@ http://localhost:8080/api
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | GET | `/api/health` | Check backend availability |
+| POST | `/api/auth/register` | Create an account |
+| POST | `/api/auth/login` | Log in |
+| GET | `/api/auth/me` | Get the current user |
+| POST | `/api/auth/logout` | Log out |
 | GET, POST | `/api/courses` | List or create courses |
 | GET, PUT, DELETE | `/api/courses/{id}` | Read, update, or delete a course |
 | GET, POST | `/api/tasks` | List or create tasks |

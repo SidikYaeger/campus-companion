@@ -13,21 +13,24 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final AuthService authService;
 
-    public CourseService(CourseRepository courseRepository) {
+    public CourseService(CourseRepository courseRepository, AuthService authService) {
         this.courseRepository = courseRepository;
+        this.authService = authService;
     }
 
     public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+        return courseRepository.findByOwnerId(authService.requireUser().getId());
     }
 
     public Course getCourseById(Long id) {
-        return courseRepository.findById(id)
+        return courseRepository.findByIdAndOwnerId(id, authService.requireUser().getId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Course not found"));
     }
 
     public Course createCourse(Course course) {
+        course.setOwner(authService.requireUser());
         return courseRepository.save(course);
     }
 
